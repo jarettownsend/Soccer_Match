@@ -7,10 +7,16 @@ stats = pd.read_csv("data/normalized_stats.csv")
 similarity_matrix = pd.read_csv("data/similarity_matrix.csv", index_col=0)
 player_names = stats["Player"].unique().tolist()
 
-st.title("⚽ Player Comparison Radar Chart")
+st.title("⚽ 24/25 EPL Player Comparison")
+st.markdown("##### Compare two players based on their stats")
 
-input1 = st.text_input("Enter Player 1", "")
-input2 = st.text_input("Enter Player 2", "")
+col1, col2 = st.columns(2)
+
+with col1:
+    input1 = st.text_input("Enter Player 1", "")
+
+with col2:
+    input2 = st.text_input("Enter Player 2", "")
 
 match1 = get_close_matches(input1, player_names, n=1)
 match2 = get_close_matches(input2, player_names, n=1)
@@ -30,11 +36,15 @@ if match1 and match2:
     top_matches1 = get_top_matches(player1, similarity_matrix)
     top_matches2 = get_top_matches(player2, similarity_matrix)
 
-    st.subheader(f"Closest matches for {player1}:")
-    st.write(", ".join(top_matches1))
+    col1, col2 = st.columns(2)
 
-    st.subheader(f"Closest matches for {player2}:")
-    st.write(", ".join(top_matches2))
+    with col1:
+        st.markdown(f"##### Closest matches for {player1}")
+        st.write(", ".join(top_matches1))
+
+    with col2:
+        st.markdown(f"##### Closest matches for {player2}")
+        st.write(", ".join(top_matches2))
 
     row1 = stats[stats["Player"] == player1].iloc[0]
     row2 = stats[stats["Player"] == player2].iloc[0]
@@ -71,11 +81,26 @@ if match1 and match2:
         polar=dict(
             radialaxis=dict(
                 visible=False,
-                range=[0, 1]
+                range=[0.3, 1]
             )
         ),
         showlegend=True
     )
+
+    differences = {}
+    for metric in metrics[:-1]:  # exclude the duplicated first metric at the end
+        diff = abs(row1[metric] - row2[metric])
+        differences[metric] = diff
+
+    biggest_diff_metric = max(differences, key=differences.get)
+
+    if row1[biggest_diff_metric] > row2[biggest_diff_metric]:
+        stronger_player = player1
+    else:
+        stronger_player = player2
+
+    st.markdown("#### 🔍 Key Difference")
+    st.write(f"The biggest difference between these players is that **{stronger_player}** is stronger at **{biggest_diff_metric}**.")
 
     st.plotly_chart(fig, use_container_width=True)
 
